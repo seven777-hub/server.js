@@ -1,21 +1,12 @@
-const express = require("express");
-const cors = require("cors");
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// 🔹 ROTA TESTE
-app.get("/", (req, res) => {
-  res.json({
-    status: "online",
-    message: "Servidor DocFácil rodando 🚀"
-  });
-});
-
-// 🔹 PORTA (Render usa variável PORT)
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Servidor rodando na porta", PORT);
-});
+{
+  "name": "docfacil-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
