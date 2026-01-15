@@ -1,12 +1,13 @@
-{
-  "name": "servidor-app",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
-  }
-}
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// 🔹 ROTA TESTE
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    message: "Servidor DocFácil rodando 🚀"
+
