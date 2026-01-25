@@ -7,10 +7,6 @@ app.use(express.json());
 
 const MP_TOKEN = process.env.MP_TOKEN;
 
-app.get("/", (req, res) => {
-  res.send("Servidor Pix online");
-});
-
 app.post("/pix", async (req, res) => {
   try {
     const resposta = await fetch(
@@ -26,7 +22,7 @@ app.post("/pix", async (req, res) => {
           description: "Documento DocFácil Pro",
           payment_method_id: "pix",
           payer: {
-            email: "teste@docfacil.com"
+            email: "cliente@docfacil.com"
           }
         })
       }
@@ -34,25 +30,23 @@ app.post("/pix", async (req, res) => {
 
     const dados = await resposta.json();
 
-    const qrBase64 =
-      dados?.point_of_interaction?.transaction_data?.qr_code_base64;
+    const copiaCola =
+      dados?.point_of_interaction?.transaction_data?.qr_code;
 
-    if (!qrBase64) {
+    if (!copiaCola) {
       return res.json({
-        erro: "Pix criado, mas QR não retornou",
+        erro: "Pix criado, mas código não retornou",
         dados
       });
     }
 
-    res.json({ qr_code_base64: qrBase64 });
+    res.json({
+      pix_copia_cola: copiaCola
+    });
 
   } catch (e) {
-    res.status(500).json({
-      erro: "Erro ao gerar Pix",
-      detalhe: e.message
-    });
+    res.status(500).json({ erro: "Erro ao gerar Pix" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Servidor rodando"));
+app.listen(process.env.PORT || 3000);
