@@ -1,40 +1,58 @@
 import express from "express";
-import mercadopago from "mercadopago";
 import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-mercadopago.configure({
-  access_token: process.env.MP_TOKEN
-});
+const MP_TOKEN = process.env.MP_TOKEN;
 
 app.post("/pix", async (req, res) => {
   try {
-    const payment = await mercadopago.payment.create({
-      transaction_amount: 5,
-      description: "Documento DocFácil Pro",
-      payment_method_id: "pix",
-      payer: {
-        email: "cliente@email.com"
+    const pagamento = await fetch(
+      "https://api.mercadopago.com/v1/payments",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${MP_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          transaction_amount: 5,
+          description: "Documento DocFácil Pro",
+          payment_method_id: "pix",
+          payer: {
+            email: "teste@docfacil.com"
+          }
+        })
       }
-    });
+    );
+
+    const dados = await pagamento.json();
+
+    const qrBase64 =
+      dados?.point_of_interaction?.transaction_data?.qr_code_base64;
+
+    if (!qrBase64) {
+      return res.json({
+        erro: "Pix criado, mas QR não retornou",
+        dados
+      });
+    }
 
     res.json({
-      qr_code: payment.body.point_of_interaction.transaction_data.qr_code,
-      qr_code_base64:
-        payment.body.point_of_interaction.transaction_data.qr_code_base64,
-      payment_id: payment.body.id
+      qr_code_base64: qrBase64
     });
+
   } catch (e) {
-    res.status(500).json({ erro: "Erro ao gerar Pix" });
+    res.status(500).json({ erro: "Erro no servidor Pix" });
   }
 });
 
 app.get("/", (req, res) => {
-  res.send("Servidor Pix DocFácil ativo ✅");
+  res.send("Servidor Pix online");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Pix rodando"));
+app.listen(PORT, () => console.log("Servidor rodando"));
