@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
@@ -8,9 +7,13 @@ app.use(express.json());
 
 const MP_TOKEN = process.env.MP_TOKEN;
 
+app.get("/", (req, res) => {
+  res.send("Servidor Pix online");
+});
+
 app.post("/pix", async (req, res) => {
   try {
-    const pagamento = await fetch(
+    const resposta = await fetch(
       "https://api.mercadopago.com/v1/payments",
       {
         method: "POST",
@@ -29,7 +32,7 @@ app.post("/pix", async (req, res) => {
       }
     );
 
-    const dados = await pagamento.json();
+    const dados = await resposta.json();
 
     const qrBase64 =
       dados?.point_of_interaction?.transaction_data?.qr_code_base64;
@@ -41,17 +44,14 @@ app.post("/pix", async (req, res) => {
       });
     }
 
-    res.json({
-      qr_code_base64: qrBase64
-    });
+    res.json({ qr_code_base64: qrBase64 });
 
   } catch (e) {
-    res.status(500).json({ erro: "Erro no servidor Pix" });
+    res.status(500).json({
+      erro: "Erro ao gerar Pix",
+      detalhe: e.message
+    });
   }
-});
-
-app.get("/", (req, res) => {
-  res.send("Servidor Pix online");
 });
 
 const PORT = process.env.PORT || 3000;
