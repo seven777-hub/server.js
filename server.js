@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
@@ -9,7 +10,7 @@ const MP_TOKEN = process.env.MP_TOKEN;
 
 app.post("/pix", async (req, res) => {
   try {
-    const resposta = await fetch(
+    const response = await fetch(
       "https://api.mercadopago.com/v1/payments",
       {
         method: "POST",
@@ -19,7 +20,7 @@ app.post("/pix", async (req, res) => {
         },
         body: JSON.stringify({
           transaction_amount: 5,
-          description: "Documento DocFácil Pro",
+          description: "Documento DocFacil Pro",
           payment_method_id: "pix",
           payer: {
             email: "cliente@docfacil.com"
@@ -28,25 +29,35 @@ app.post("/pix", async (req, res) => {
       }
     );
 
-    const dados = await resposta.json();
+    const data = await response.json();
 
-    const copiaCola =
-      dados?.point_of_interaction?.transaction_data?.qr_code;
+    const qrCode =
+      data?.point_of_interaction?.transaction_data?.qr_code;
 
-    if (!copiaCola) {
-      return res.json({
-        erro: "Pix criado, mas código não retornou",
-        dados
+    const qrCodeBase64 =
+      data?.point_of_interaction?.transaction_data?.qr_code_base64;
+
+    if (!qrCode) {
+      return res.status(400).json({
+        error: "Pix criado, mas QR Code não retornou",
+        data
       });
     }
 
     res.json({
-      pix_copia_cola: copiaCola
+      copia_e_cola: qrCode,
+      qr_code_base64: qrCodeBase64
     });
 
-  } catch (e) {
-    res.status(500).json({ erro: "Erro ao gerar Pix" });
+  } catch (error) {
+    res.status(500).json({
+      error: "Erro ao gerar Pix",
+      details: error.message
+    });
   }
 });
 
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Servidor Pix rodando na porta " + PORT);
+});
