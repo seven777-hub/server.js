@@ -1,63 +1,76 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
 const MP_TOKEN = process.env.MP_TOKEN;
 
+if (!MP_TOKEN) {
+  console.error("MP_TOKEN não definido");
+}
+
+app.get("/", (req, res) => {
+  res.send("Servidor DocFácil rodando 🚀");
+});
+
 app.post("/pix", async (req, res) => {
   try {
-    const response = await fetch(
+    const { valor, nome } = req.body;
+
+    if (!valor) {
+      return res.status(400).json({ erro: "Valor não informado" });
+    }
+
+    const resposta = await fetch(
       "https://api.mercadopago.com/v1/payments",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${MP_TOKEN}`,
+          Authorization: `Bearer ${MP_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          transaction_amount: 5,
-          description: "Documento DocFacil Pro",
+          transaction_amount: Number(valor),
+          description: "Documento DocFácil",
           payment_method_id: "pix",
           payer: {
-            email: "cliente@docfacil.com"
+            email: "cliente@docfacil.com",
+            first_name: nome || "Cliente"
           }
         })
       }
     );
 
-    const data = await response.json();
+    const dados = await resposta.json();
 
-    const qrCode =
-      data?.point_of_interaction?.transaction_data?.qr_code;
+    const copiaCola =
+      dados?.point_of_interaction?.transaction_data?.qr_code;
 
-    const qrCodeBase64 =
-      data?.point_of_interaction?.transaction_data?.qr_code_base64;
+    const qrBase64 =
+      dados?.point_of_interaction?.transaction_data?.qr_code_base64;
 
-    if (!qrCode) {
-      return res.status(400).json({
-        error: "Pix criado, mas QR Code não retornou",
-        data
+    if (!copiaCola) {
+      return res.status(500).json({
+        erro: "Pix criado, mas QR Code não retornou",
+        dados
       });
     }
 
     res.json({
-      copia_e_cola: qrCode,
-      qr_code_base64: qrCodeBase64
+      copiaCola,
+      qrBase64
     });
 
-  } catch (error) {
-    res.status(500).json({
-      error: "Erro ao gerar Pix",
-      details: error.message
-    });
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: "Erro ao gerar Pix" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Servidor Pix rodando na porta " + PORT);
+  console.log("Servidor rodando na porta", PORT);
 });
