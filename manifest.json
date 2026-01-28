@@ -1,0 +1,21 @@
+{
+  "name": "DocFácil Pro",
+  "short_name": "DocFácil",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#2563eb",
+  "description": "Documentos, cálculos e controle financeiro para autônomos",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
