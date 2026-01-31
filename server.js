@@ -2,75 +2,91 @@ import express from "express";
 import cors from "cors";
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-const MP_TOKEN = process.env.MP_TOKEN;
+const PORT = process.env.PORT || 3000;
 
-if (!MP_TOKEN) {
-  console.error("MP_TOKEN não definido");
-}
+/* =========================
+   CONFIG
+========================= */
+const ADMIN_EMAIL = "luh.fer015@gmail.com";
 
+/* =========================
+   BANCO SIMPLES (MEMÓRIA)
+   depois dá pra trocar
+========================= */
+let users = {
+  "luh.fer015@gmail.com": {
+    email: "luh.fer015@gmail.com",
+    status: "ativo",
+    role: "admin"
+  }
+};
+
+/* =========================
+   ROTAS
+========================= */
+
+// Health check
 app.get("/", (req, res) => {
   res.send("Servidor DocFácil rodando 🚀");
 });
 
-app.post("/pix", async (req, res) => {
-  try {
-    const { valor, nome } = req.body;
+// Login
+app.post("/login", (req, res) => {
+  const { email } = req.body;
 
-    if (!valor) {
-      return res.status(400).json({ erro: "Valor não informado" });
-    }
-
-    const resposta = await fetch(
-      "https://api.mercadopago.com/v1/payments",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${MP_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          transaction_amount: Number(valor),
-          description: "Documento DocFácil",
-          payment_method_id: "pix",
-          payer: {
-            email: "cliente@docfacil.com",
-            first_name: nome || "Cliente"
-          }
-        })
-      }
-    );
-
-    const dados = await resposta.json();
-
-    const copiaCola =
-      dados?.point_of_interaction?.transaction_data?.qr_code;
-
-    const qrBase64 =
-      dados?.point_of_interaction?.transaction_data?.qr_code_base64;
-
-    if (!copiaCola) {
-      return res.status(500).json({
-        erro: "Pix criado, mas QR Code não retornou",
-        dados
-      });
-    }
-
-    res.json({
-      copiaCola,
-      qrBase64
-    });
-
-  } catch (erro) {
-    console.error(erro);
-    res.status(500).json({ erro: "Erro ao gerar Pix" });
+  if (!email) {
+    return res.status(400).json({ error: "E-mail obrigatório" });
   }
+
+  // Se não existe, cria como pendente
+  if (!users[email]) {
+    users[email] = {
+      email,
+      status: "pendente",
+      role: "user"
+    };
+  }
+
+  const user = users[email];
+
+  if (user.status !== "ativo") {
+    return res.json({
+      status: "pendente",
+      message: "Acesso pendente. Após o pagamento, o acesso é liberado manualmente."
+    });
+  }
+
+  res.json({
+    status: "ativo",
+    role: user.role
+  });
 });
 
-const PORT = process.env.PORT || 3000;
+// Painel admin – listar usuários
+app.get("/admin/users", (req, res) => {
+  res.json(users);
+});
+
+// Admin libera usuário
+app.post("/admin/liberar", (req, res) => {
+  const { adminEmail, email } = req.body;
+
+  if (adminEmail !== ADMIN_EMAIL) {
+    return res.status(403).json({ error: "Não autorizado" });
+  }
+
+  if (!users[email]) {
+    return res.status(404).json({ error: "Usuário não encontrado" });
+  }
+
+  users[email].status = "ativo";
+
+  res.json({ success: true });
+});
+
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta", PORT);
 });
