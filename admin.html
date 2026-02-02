@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Admin - DocFácil Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      padding: 20px;
+    }
+    .box {
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    ul {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Painel Admin</h2>
+
+  <input id="senha" type="password" placeholder="Senha do admin">
+  <button onclick="listar()">Entrar</button>
+
+  <hr>
+
+  <input id="emailNovo" type="email" placeholder="E-mail para liberar">
+  <button onclick="liberar()">Liberar acesso</button>
+
+  <ul id="lista"></ul>
+</div>
+
+<script>
+const API = "https://docfacil-server.onrender.com";
+
+function listar() {
+  fetch(API + "/admin/list", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      password: document.getElementById("senha").value
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const ul = document.getElementById("lista");
+    ul.innerHTML = "";
+    data.usuariosLiberados.forEach(email => {
+      const li = document.createElement("li");
+      li.textContent = email;
+      ul.appendChild(li);
+    });
+  })
+  .catch(() => alert("Senha incorreta"));
+}
+
+function liberar() {
+  fetch(API + "/admin/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      password: document.getElementById("senha").value,
+      email: document.getElementById("emailNovo").value
+    })
+  })
+  .then(() => listar());
+}
+</script>
+
+</body>
+</html>
