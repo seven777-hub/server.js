@@ -5,88 +5,65 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+// ===============================
+// CONFIG
+// ===============================
+const ADMIN_PASSWORD = "123456";
 
-/* =========================
-   CONFIG
-========================= */
-const ADMIN_EMAIL = "luh.fer015@gmail.com";
+// lista de e-mails liberados
+let usuariosLiberados = [
+  "luh.fer015@gmail.com"
+];
 
-/* =========================
-   BANCO SIMPLES (MEMÓRIA)
-   depois dá pra trocar
-========================= */
-let users = {
-  "luh.fer015@gmail.com": {
-    email: "luh.fer015@gmail.com",
-    status: "ativo",
-    role: "admin"
-  }
-};
+// ===============================
+// ROTAS
+// ===============================
 
-/* =========================
-   ROTAS
-========================= */
-
-// Health check
+// status do servidor
 app.get("/", (req, res) => {
   res.send("Servidor DocFácil rodando 🚀");
 });
 
-// Login
-app.post("/login", (req, res) => {
+// verificar acesso do usuário
+app.post("/check-access", (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ error: "E-mail obrigatório" });
+    return res.json({ autorizado: false });
   }
 
-  // Se não existe, cria como pendente
-  if (!users[email]) {
-    users[email] = {
-      email,
-      status: "pendente",
-      role: "user"
-    };
-  }
-
-  const user = users[email];
-
-  if (user.status !== "ativo") {
-    return res.json({
-      status: "pendente",
-      message: "Acesso pendente. Após o pagamento, o acesso é liberado manualmente."
-    });
-  }
-
-  res.json({
-    status: "ativo",
-    role: user.role
-  });
+  const autorizado = usuariosLiberados.includes(email);
+  res.json({ autorizado });
 });
 
-// Painel admin – listar usuários
-app.get("/admin/users", (req, res) => {
-  res.json(users);
-});
+// painel admin - listar usuários
+app.post("/admin/list", (req, res) => {
+  const { password } = req.body;
 
-// Admin libera usuário
-app.post("/admin/liberar", (req, res) => {
-  const { adminEmail, email } = req.body;
-
-  if (adminEmail !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: "Não autorizado" });
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ erro: "Senha inválida" });
   }
 
-  if (!users[email]) {
-    return res.status(404).json({ error: "Usuário não encontrado" });
-  }
-
-  users[email].status = "ativo";
-
-  res.json({ success: true });
+  res.json({ usuariosLiberados });
 });
 
+// painel admin - liberar usuário
+app.post("/admin/add", (req, res) => {
+  const { password, email } = req.body;
+
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ erro: "Senha inválida" });
+  }
+
+  if (!usuariosLiberados.includes(email)) {
+    usuariosLiberados.push(email);
+  }
+
+  res.json({ sucesso: true, usuariosLiberados });
+});
+
+// ===============================
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta", PORT);
 });
