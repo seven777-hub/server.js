@@ -1,17 +1,19 @@
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================
-// CONFIGURAÇÃO
-// ==========================
+// =========================
+// CONFIGURAÇÃO ADMIN
+// =========================
 const ADMIN_EMAIL = "luh.fer015@gmail.com";
 const ADMIN_PASSWORD = "123456";
 
-// usuários em memória (temporário)
+// =========================
+// BANCO SIMPLES (memória)
+// =========================
 let users = [
   {
     email: ADMIN_EMAIL,
@@ -21,58 +23,41 @@ let users = [
   }
 ];
 
-// ==========================
+// =========================
 // ROTAS
-// ==========================
-
-// TESTE
+// =========================
 app.get("/", (req, res) => {
-  res.json({ status: "API DocFácil Pro online" });
+  res.json({ status: "Servidor DocFácil rodando" });
 });
 
-// LOGIN
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
   const user = users.find(u => u.email === email);
 
   if (!user) {
-    return res.status(401).json({
-      ok: false,
-      message: "Usuário não encontrado"
-    });
+    return res.status(401).json({ ok: false, message: "Usuário não encontrado" });
   }
 
   if (user.password !== password) {
-    return res.status(401).json({
-      ok: false,
-      message: "Senha incorreta"
-    });
+    return res.status(401).json({ ok: false, message: "Senha incorreta" });
   }
 
   if (!user.liberado) {
-    return res.status(403).json({
-      ok: false,
-      message: "Usuário aguardando liberação"
-    });
+    return res.status(403).json({ ok: false, message: "Usuário aguardando liberação" });
   }
 
-  return res.json({
+  res.json({
     ok: true,
     role: user.role
   });
 });
 
-// CADASTRO DE USUÁRIO COMUM
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
 
-  const existe = users.find(u => u.email === email);
-  if (existe) {
-    return res.status(400).json({
-      ok: false,
-      message: "Usuário já cadastrado"
-    });
+  if (users.find(u => u.email === email)) {
+    return res.status(400).json({ ok: false, message: "Usuário já existe" });
   }
 
   users.push({
@@ -82,41 +67,27 @@ app.post("/register", (req, res) => {
     liberado: false
   });
 
-  res.json({
-    ok: true,
-    message: "Cadastro feito. Aguarde liberação do admin."
-  });
+  res.json({ ok: true });
 });
 
-// LISTAR USUÁRIOS (ADMIN)
 app.get("/admin/users", (req, res) => {
   res.json(users);
 });
 
-// LIBERAR USUÁRIO (ADMIN)
 app.post("/admin/liberar", (req, res) => {
   const { email } = req.body;
-
   const user = users.find(u => u.email === email);
+
   if (!user) {
-    return res.status(404).json({
-      ok: false,
-      message: "Usuário não encontrado"
-    });
+    return res.status(404).json({ ok: false });
   }
 
   user.liberado = true;
-
-  res.json({
-    ok: true,
-    message: "Usuário liberado"
-  });
+  res.json({ ok: true });
 });
 
-// ==========================
-// START
-// ==========================
+// =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Servidor rodando na porta " + PORT);
+  console.log("Servidor rodando na porta", PORT);
 });
