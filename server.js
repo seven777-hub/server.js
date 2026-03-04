@@ -26,12 +26,33 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 // =========================
+// MODEL DOCUMENTO
+// =========================
+const documentoSchema = new mongoose.Schema({
+  usuarioEmail: String,
+  nomeCliente: String,
+  cpfOuCnpj: String,
+  tipoDocumento: String,
+  descricao: String,
+  valor: Number,
+  status: {
+    type: String,
+    default: "pendente"
+  },
+  criadoEm: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const Documento = mongoose.model("Documento", documentoSchema);
+
+// =========================
 // CONFIGURAÇÃO ADMIN
 // =========================
 const ADMIN_EMAIL = "luh.fer015@gmail.com";
 const ADMIN_PASSWORD = "123456";
 
-// Criar admin automaticamente se não existir
 async function criarAdmin() {
   const adminExiste = await User.findOne({ email: ADMIN_EMAIL });
 
@@ -55,6 +76,7 @@ app.get("/", (req, res) => {
   res.json({ status: "Servidor DocFácil rodando" });
 });
 
+// LOGIN
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -78,6 +100,7 @@ app.post("/login", async (req, res) => {
   });
 });
 
+// REGISTRO
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
 
@@ -95,11 +118,13 @@ app.post("/register", async (req, res) => {
   res.json({ ok: true });
 });
 
+// LISTAR USUÁRIOS (ADMIN)
 app.get("/admin/users", async (req, res) => {
   const users = await User.find();
   res.json(users);
 });
 
+// LIBERAR USUÁRIO (ADMIN)
 app.post("/admin/liberar", async (req, res) => {
   const { email } = req.body;
 
@@ -113,6 +138,52 @@ app.post("/admin/liberar", async (req, res) => {
   await user.save();
 
   res.json({ ok: true });
+});
+
+// =========================
+// CRIAR DOCUMENTO
+// =========================
+app.post("/documentos", async (req, res) => {
+  try {
+    const {
+      usuarioEmail,
+      nomeCliente,
+      cpfOuCnpj,
+      tipoDocumento,
+      descricao,
+      valor
+    } = req.body;
+
+    const novoDocumento = await Documento.create({
+      usuarioEmail,
+      nomeCliente,
+      cpfOuCnpj,
+      tipoDocumento,
+      descricao,
+      valor
+    });
+
+    res.json({ ok: true, documento: novoDocumento });
+
+  } catch (error) {
+    res.status(500).json({ ok: false, error });
+  }
+});
+
+// =========================
+// LISTAR DOCUMENTOS DO USUÁRIO
+// =========================
+app.get("/documentos/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const documentos = await Documento.find({ usuarioEmail: email });
+
+    res.json(documentos);
+
+  } catch (error) {
+    res.status(500).json({ ok: false, error });
+  }
 });
 
 // =========================
