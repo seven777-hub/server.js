@@ -191,3 +191,112 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta", PORT);
 });
+// =========================
+// CALCULADORA ORÇAMENTO
+// =========================
+app.post("/calcular/orcamento", async (req, res) => {
+  try {
+    const {
+      usuarioEmail,
+      horas,
+      valorHora,
+      material,
+      deslocamento,
+      margem,
+      imposto
+    } = req.body;
+
+    const maoDeObra = horas * valorHora;
+    const custoBase = maoDeObra + material + deslocamento;
+    const lucro = custoBase * (margem / 100);
+    const subtotal = custoBase + lucro;
+    const valorImposto = subtotal * (imposto / 100);
+    const total = subtotal + valorImposto;
+
+    const novoCalculo = new Calculo({
+      usuarioEmail,
+      tipo: "orcamento",
+      dados: req.body,
+      resultado: {
+        maoDeObra,
+        custoBase,
+        lucro,
+        valorImposto,
+        total
+      }
+    });
+
+    await novoCalculo.save();
+
+    res.json({
+      ok: true,
+      resultado: {
+        maoDeObra,
+        custoBase,
+        lucro,
+        valorImposto,
+        total
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+
+// =========================
+// CALCULADORA UBER / ENTREGADOR
+// =========================
+app.post("/calcular/uber", async (req, res) => {
+  try {
+    const {
+      usuarioEmail,
+      kmRodado,
+      consumoKmPorLitro,
+      precoCombustivel,
+      valorRecebido,
+      taxaApp,
+      custoManutencaoPorKm
+    } = req.body;
+
+    const litrosUsados = kmRodado / consumoKmPorLitro;
+    const custoCombustivel = litrosUsados * precoCombustivel;
+    const custoManutencao = kmRodado * custoManutencaoPorKm;
+    const valorTaxa = valorRecebido * (taxaApp / 100);
+
+    const custoTotal = custoCombustivel + custoManutencao + valorTaxa;
+    const lucroLiquido = valorRecebido - custoTotal;
+
+    const novoCalculo = new Calculo({
+      usuarioEmail,
+      tipo: "uber",
+      dados: req.body,
+      resultado: {
+        litrosUsados,
+        custoCombustivel,
+        custoManutencao,
+        valorTaxa,
+        custoTotal,
+        lucroLiquido
+      }
+    });
+
+    await novoCalculo.save();
+
+    res.json({
+      ok: true,
+      resultado: {
+        litrosUsados,
+        custoCombustivel,
+        custoManutencao,
+        valorTaxa,
+        custoTotal,
+        lucroLiquido
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
